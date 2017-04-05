@@ -37,6 +37,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.Build;
@@ -59,7 +60,10 @@ import eu.chainfire.libsuperuser.Shell.SU;
 
 public final class Util
 {
+	// keep this variable, because some versions of ART seem to inline
+	// a function that simply returns a constant.
 	private static boolean sIsExposedModuleEnabled = false;
+	public static boolean sIsBootCompletedHackWorking = false;
 
 	public interface Logger
 	{
@@ -110,6 +114,13 @@ public final class Util
 
 	public static boolean isXposedModuleEnabled() {
 		return sIsExposedModuleEnabled;
+	}
+
+	public static boolean isBootCompletedHackWorking() { return sIsBootCompletedHackWorking; }
+
+	public static boolean isXposedModuleOrSystemApp(Context context)
+	{
+		return isXposedModuleEnabled() || isSystemApp(context);
 	}
 
 	public static boolean containsManufacturer(String str) {

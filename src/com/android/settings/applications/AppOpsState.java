@@ -38,6 +38,7 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.text.SpannableString;
 import android.text.SpannableStringBuilder;
+import android.text.TextUtils;
 import android.text.format.DateUtils;
 import android.text.style.StrikethroughSpan;
 import android.util.Log;
@@ -128,14 +129,16 @@ public class AppOpsState {
                     AppOpsManagerWrapper.OP_WIFI_SCAN,
                     AppOpsManagerWrapper.OP_NEIGHBORING_CELLS,
                     AppOpsManagerWrapper.OP_MONITOR_LOCATION,
-                    AppOpsManagerWrapper.OP_MONITOR_HIGH_POWER_LOCATION},
+                    AppOpsManagerWrapper.OP_MONITOR_HIGH_POWER_LOCATION,
+                    AppOpsManagerWrapper.OP_MOCK_LOCATION, },
             new boolean[] { true,
                     true,
                     false,
                     false,
                     false,
                     false,
-                    false}
+                    false,
+                    true}
             );
 
     public static final OpsTemplate PERSONAL_TEMPLATE = new OpsTemplate(
@@ -148,9 +151,23 @@ public class AppOpsState {
                     AppOpsManagerWrapper.OP_DELETE_CALL_LOG,
                     AppOpsManagerWrapper.OP_DELETE_CONTACTS,
                     AppOpsManagerWrapper.OP_ACCESS_XIAOMI_ACCOUNT,
+                    AppOpsManagerWrapper.OP_READ_PHONE_STATE,
+                    AppOpsManagerWrapper.OP_PROCESS_OUTGOING_CALLS,
+                    AppOpsManagerWrapper.OP_USE_FINGERPRINT,
+                    AppOpsManagerWrapper.OP_BODY_SENSORS,
+                    AppOpsManagerWrapper.OP_READ_EXTERNAL_STORAGE,
+                    AppOpsManagerWrapper.OP_WRITE_EXTERNAL_STORAGE,
+                    AppOpsManagerWrapper.OP_GET_ACCOUNTS,
                     AppOpsManagerWrapper.OP_READ_CLIPBOARD,
                     AppOpsManagerWrapper.OP_WRITE_CLIPBOARD },
             new boolean[] { true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
+                    true,
                     true,
                     true,
                     true,
@@ -210,6 +227,9 @@ public class AppOpsState {
                     AppOpsManagerWrapper.OP_AUDIO_BLUETOOTH_VOLUME,
                     AppOpsManagerWrapper.OP_AUDIO_FM_VOLUME,
                     AppOpsManagerWrapper.OP_AUDIO_MATV_VOLUME,
+                    AppOpsManagerWrapper.OP_WRITE_WALLPAPER,
+                    AppOpsManagerWrapper.OP_ASSIST_SCREENSHOT,
+                    AppOpsManagerWrapper.OP_ASSIST_STRUCTURE,
                     AppOpsManagerWrapper.OP_MUTE_MICROPHONE, },
             new boolean[] { false,
                     true,
@@ -224,6 +244,9 @@ public class AppOpsState {
                     false,
                     false,
                     false,
+                    true,
+                    true,
+                    true,
                     true,
                     true,
                     true, }
@@ -243,6 +266,10 @@ public class AppOpsState {
             new int[] { OP_POST_NOTIFICATION,
                     AppOpsManagerWrapper.OP_ACCESS_NOTIFICATIONS,
                     AppOpsManagerWrapper.OP_CALL_PHONE,
+                    AppOpsManagerWrapper.OP_ADD_VOICEMAIL,
+                    AppOpsManagerWrapper.OP_USE_SIP,
+                    AppOpsManagerWrapper.OP_READ_CELL_BROADCASTS,
+                    AppOpsManagerWrapper.OP_TURN_SCREEN_ON,
                     AppOpsManagerWrapper.OP_WRITE_SETTINGS,
                     AppOpsManagerWrapper.OP_SYSTEM_ALERT_WINDOW,
                     AppOpsManagerWrapper.OP_WAKE_LOCK,
@@ -258,6 +285,10 @@ public class AppOpsState {
                     AppOpsManagerWrapper.OP_WAKEUP_ALARM,
                     AppOpsManagerWrapper.OP_TOAST_WINDOW, },
             new boolean[] { false,
+                    true,
+                    true,
+                    true,
+                    true,
                     true,
                     true,
                     true,
@@ -463,7 +494,7 @@ public class AppOpsState {
             for (int i=0; i<ops.size(); i++) {
                 int op = ops.get(i).getOp();
                 SpannableString ss;
-                if (op < items.length && items[op].length() != 0) {
+                if (op < items.length && !TextUtils.isEmpty(items[op])) {
                     ss = new SpannableString(items[op]);
                 } else if (isSummary) {
                     ss = new SpannableString(OpsLabelHelper.getOpSummary(context, op));

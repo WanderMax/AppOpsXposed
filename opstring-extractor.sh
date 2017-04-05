@@ -1,6 +1,6 @@
 #!/bin/bash
 
-BRANCH="cm-12.1"
+BRANCH="cm-13.0"
 RES="https://github.com/CyanogenMod/android_packages_apps_Settings/raw/$BRANCH/res/"
 TMP=$(mktemp -t aoxXXXXXX)
 
@@ -16,6 +16,14 @@ PATTERNS=(
 	's/_notification_toast/_post_notification/g'
 	's/_draw_on_top/_system_alert_window/g'
 	's/_media_buttons/_take_media_buttons/g'
+	's/_use_body_sensors/_body_sensors/g'
+	's/_data_change/_data_connect_change/g'
+	's/_cell_scan/_neighboring_cells/g'
+	#'s/_make_call/_call_phone/g'
+	's/_superuser/_su/g'
+	's/_start_at_boot/_boot_completed/g'
+	's/_mobile_data/_data_connect/g'
+	's/_toggle_(.*?)"/_$1_change"/g'
 	's/_(labels|summaries)_(.*?)_volume/_$1_audio_$2_volume/g'
 )
 
@@ -160,7 +168,7 @@ extract_lang() {
 				return 1
 			fi
 
-			ops=$(grep -oP 'app_ops_summaries_(\w+)' res/values/extracted.xml | sed -e 's/app_ops_summaries_//')
+			ops=$(grep -oP 'app_ops_summaries_(\w+)' res/values/ops.xml | sed -e 's/app_ops_summaries_//')
 			i=0
 
 			for op in $ops; do
@@ -198,7 +206,7 @@ extract_lang() {
 
 		echo "  <!-- Categories -->" >> "$TMP.ops"
 
-		cats=$(grep -oP 'app_ops_categories_(\w+)' res/values/extracted.xml)
+		cats=$(grep -oP 'app_ops_categories_(\w+)' res/values/ops.xml)
 		i=0
 
 		for c in $cats; do

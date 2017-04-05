@@ -1,3 +1,21 @@
+### 1.30.3:
+* Fix missing op labels/summaries
+* Fix issue in "Show changed"
+* Fix OP_BOOT_COMPLETED on Marshmallow
+
+### 1.30.2
+* Fixed crashes
+
+### 1.30.1
+* Fixed crash
+* Updated Slovak translation
+
+### 1.30
+* Better support for Marshmallow
+* Fix crashes
+* Fix label/summary issues
+* Fix multiple icons in "App info" screen
+
 ### 1.29
 * Add option to customize appearance (theme, icons)
 * Fixed issue on MiUi where ops were reset

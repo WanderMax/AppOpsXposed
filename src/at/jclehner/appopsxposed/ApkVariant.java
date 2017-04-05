@@ -45,6 +45,7 @@ import at.jclehner.appopsxposed.variants.AOSP;
 import at.jclehner.appopsxposed.variants.CyanogenMod;
 import at.jclehner.appopsxposed.variants.HTC;
 import at.jclehner.appopsxposed.variants.LG;
+import at.jclehner.appopsxposed.variants.Minimal;
 import at.jclehner.appopsxposed.variants.OmniROM;
 import at.jclehner.appopsxposed.variants.Oppo;
 import at.jclehner.appopsxposed.variants.Samsung;
@@ -90,6 +91,7 @@ public abstract class ApkVariant implements IXposedHookLoadPackage, IXposedHookI
 		new CyanogenMod(),
 		new OmniROM(),
 		new Oppo(),
+		new Minimal(),
 		new AOSP() // must be the last entry!
 	};
 
@@ -330,12 +332,15 @@ public abstract class ApkVariant implements IXposedHookLoadPackage, IXposedHookI
 					protected void afterHookedMethod(final MethodHookParam param) throws Throwable
 					{
 						final Menu menu = (Menu) param.args[0];
-						//menu.clear();
 
-						Res.modPrefs.reload();
+						XUtils.reloadPrefs();
+
 						int icon = Res.modPrefs.getInt("icon_appinfo", Constants.ICON_LAUNCHER);
 
-						final MenuItem item = menu.add(getAppOpsTitle());
+						MenuItem item = menu.findItem(R.id.app_ops_settings);
+						if(item == null)
+							item = menu.add(0, R.id.app_ops_settings, 0, getAppOpsTitle());
+
 						item.setShowAsAction(MenuItem.SHOW_AS_ACTION_IF_ROOM);
 						item.setTitle(Res.modRes.getString(R.string.app_ops_settings));
 						item.setIcon(Res.modRes.getDrawable(Constants.ICONS[icon]));

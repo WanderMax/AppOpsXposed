@@ -27,9 +27,8 @@ import android.Manifest;
 import android.annotation.TargetApi;
 import android.app.AppOpsManager;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
-import android.util.SparseIntArray;
+import android.os.Build;
 
 @TargetApi(19)
 public class AppOpsManagerWrapper extends ObjectWrapper
@@ -84,6 +83,21 @@ public class AppOpsManagerWrapper extends ObjectWrapper
 	public static final int OP_TOAST_WINDOW = getOpInt("OP_TOAST_WINDOW");
 	public static final int OP_PROJECT_MEDIA = getOpInt("OP_PROJECT_MEDIA");
 	public static final int OP_ACTIVATE_VPN = getOpInt("OP_ACTIVATE_VPN");
+	public static final int OP_WRITE_WALLPAPER = getOpInt("OP_WRITE_WALLPAPER");
+	public static final int OP_ASSIST_STRUCTURE = getOpInt("OP_ASSIST_STRUCTURE");
+	public static final int OP_ASSIST_SCREENSHOT = getOpInt("OP_ASSIST_SCREENSHOT");
+	public static final int OP_READ_PHONE_STATE = getOpInt("OP_READ_PHONE_STATE");
+	public static final int OP_ADD_VOICEMAIL = getOpInt("OP_ADD_VOICEMAIL");
+	public static final int OP_USE_SIP = getOpInt("OP_USE_SIP");
+	public static final int OP_PROCESS_OUTGOING_CALLS = getOpInt("OP_PROCESS_OUTGOING_CALLS");
+	public static final int OP_USE_FINGERPRINT = getOpInt("OP_USE_FINGERPRINT");
+	public static final int OP_BODY_SENSORS = getOpInt("OP_BODY_SENSORS");
+	public static final int OP_READ_CELL_BROADCASTS = getOpInt("OP_READ_CELL_BROADCASTS");
+	public static final int OP_MOCK_LOCATION = getOpInt("OP_MOCK_LOCATION");
+	public static final int OP_READ_EXTERNAL_STORAGE = getOpInt("OP_READ_EXTERNAL_STORAGE");
+	public static final int OP_WRITE_EXTERNAL_STORAGE = getOpInt("OP_WRITE_EXTERNAL_STORAGE");
+	public static final int OP_TURN_SCREEN_ON = getOpInt("OP_TURN_SCREEN_ON");
+	public static final int OP_GET_ACCOUNTS = getOpInt("OP_GET_ACCOUNTS");
 
 	// CyanogenMod (also seen on some Xperia ROMs!)
 	public static final int OP_WIFI_CHANGE = getOpInt("OP_WIFI_CHANGE");
@@ -232,22 +246,52 @@ public class AppOpsManagerWrapper extends ObjectWrapper
 		return callStatic(AppOpsManager.class, "opToSwitch", new Class<?>[] { int.class }, op);
 	}
 
-	private static boolean sUseOpToDefaultMode = true;
+	// 0        AppOpsManager.opToDefaultMode(op)
+	// 1        AppOpsManager.opToDefaultMode(op, false)
+	// 2        AppOpsManager.sOpDefaultMode[op]
+	// 3        (disabled)
+	private static int sOpToDefaultModeType = 0;
+	private static int[] sOpDefaultModes;
 
 	public static int opToDefaultMode(int op)
 	{
-		if(sUseOpToDefaultMode)
+		// default op modes were introduced in KitKat
+		if(Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT)
+			return MODE_ALLOWED;
+
+		try
 		{
-			try
+			switch(sOpToDefaultModeType)
 			{
-				return callStatic(AppOpsManager.class, "opToDefaultMode", new Class<?>[] { int.class }, op);
-			}
-			catch(ReflectiveException e)
-			{
-				Util.debug(e);
-				sUseOpToDefaultMode = false;
+				case 0:
+					return callStatic(AppOpsManager.class, "opToDefaultMode",
+							new Class[]{ int.class }, op);
+				case 1:
+					return callStatic(AppOpsManager.class, "opToDefaultMode",
+							new Class[]{ int.class, boolean.class }, op, false);
+				case 2:
+					sOpDefaultModes = getStatic(AppOpsManager.class, "sOpDefaultMode");
+					// fall through
+				default:
+					break;
 			}
 		}
+		catch(ReflectiveException e)
+		{
+			Util.debug(e);
+			++sOpToDefaultModeType;
+			return opToDefaultMode(op);
+		}
+		catch(Exception e)
+		{
+			Util.log(e);
+		}
+
+		if(sOpDefaultModes == null)
+			sOpDefaultModes = getFallbackDefaultModes();
+
+		if(op < sOpDefaultModes.length)
+			return sOpDefaultModes[op];
 
 		return MODE_ALLOWED;
 	}
@@ -369,6 +413,32 @@ public class AppOpsManagerWrapper extends ObjectWrapper
 		return getOpInt("_NUM_OP");
 	}
 
+	private static int[] getFallbackDefaultModes()
+	{
+		final int[] defaults = new int[_NUM_OP];
+		for(int op = 0; op != defaults.length; ++op)
+			defaults[op] = opToDefaultModeInternal(op);
+
+		return defaults;
+	}
+
+	private static int opToDefaultModeInternal(int op)
+	{
+		if(op == OP_WRITE_SETTINGS || op == OP_SYSTEM_ALERT_WINDOW)
+			return Build.VERSION.SDK_INT < Build.VERSION_CODES.M ? MODE_ALLOWED : MODE_DEFAULT;
+
+		if(op == OP_WRITE_SMS)
+			return MODE_IGNORED;
+
+		if(op == OP_PROJECT_MEDIA || op == OP_ACTIVATE_VPN || op == OP_GET_USAGE_STATS)
+			return MODE_DEFAULT;
+
+		if(op == OP_MOCK_LOCATION)
+			return MODE_ERRORED;
+
+		return MODE_ALLOWED;
+	}
+
 	private static void mergeOpEntryWrappers(List<OpEntryWrapper> dest, List<OpEntryWrapper> src)
 	{
 		final BitSet bs = new BitSet(_NUM_OP);
@@ -449,6 +519,8 @@ public class AppOpsManagerWrapper extends ObjectWrapper
 		private long mTime;
 		private long mRejectTime;
 		private int mDuration;
+		private int mProxyUid = -1;
+		private String mProxyPackageName = null;
 
 		public OpEntryWrapper(int op, int mode, long time, long rejectTime, int duration)
 		{
@@ -459,6 +531,14 @@ public class AppOpsManagerWrapper extends ObjectWrapper
 			mTime = time;
 			mRejectTime = rejectTime;
 			mDuration = duration;
+		}
+
+		public OpEntryWrapper(int op, int mode, long time, long rejectTime, int duration, int proxyId, String proxyPackageName)
+		{
+			this(op, mode, time, rejectTime, duration);
+
+			mProxyUid = proxyId;
+			mProxyPackageName = proxyPackageName;
 		}
 
 		public static List<OpEntryWrapper> convertList(List<?> list)
@@ -519,6 +599,28 @@ public class AppOpsManagerWrapper extends ObjectWrapper
 				return (Integer) call("getDuration");
 
 			return mDuration == -1 ? (int)(System.currentTimeMillis() - mTime) : mDuration;
+		}
+
+		public int getProxyUid()
+		{
+			if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1)
+				return -1;
+
+			if(mObj != null)
+				return (Integer) call("getProxyUid");
+
+			return mProxyUid;
+		}
+
+		public String getProxyPackageName()
+		{
+			if(Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1)
+				return null;
+
+			if(mObj != null)
+				return (String) call("getProxyPackageName");
+
+			return mProxyPackageName;
 		}
 	}
 }
